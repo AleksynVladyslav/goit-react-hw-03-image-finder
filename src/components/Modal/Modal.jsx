@@ -38,4 +38,9 @@ class Modal extends Component {
   }
 }
 
+Modal.propTypes = {
+  selectedImage: propTypes.string.isRequired,
+  onClose: propTypes.func.isRequired,
+};
+
 export default Modal;
