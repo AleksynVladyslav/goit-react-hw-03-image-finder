@@ -16,66 +16,64 @@ class App extends Component {
     searchQuery: '',
     selectedImage: null,
     currentPage: 1,
-    totalPages: 0,
     showModal: false,
     showLoader: false,
     showButton: false,
   };
 
-  onFormSubmit = async searchQuery => {
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (
+      prevState.searchQuery !== this.state.searchQuery ||
+      prevState.currentPage !== this.state.currentPage
+    ) {
+      this.getImages();
+    }
+  }
+
+  getImages = async () => {
+    const { currentPage, searchQuery } = this.state;
     try {
-      this.setState({
-        images: [],
-        currentPage: 1,
-        searchQuery,
-        totalPages: 0,
-        showModal: false,
-        showLoader: true,
-        showButton: false,
-      });
-      const response = await fetchImagesWithQuery(searchQuery, 1);
+      this.setState({ showLoader: true });
+      const response = await fetchImagesWithQuery(searchQuery, currentPage);
       const { hits, totalHits } = response;
 
-      if (searchQuery.trim() === '') {
-        this.setState({ showLoader: false });
-        return toast.warn('You must enter something!');
-      }
       if (totalHits === 0) {
         this.setState({ showLoader: false });
         return toast.warn('We did not find anything for your request!');
       }
-      toast.success(`We found ${totalHits} images for your request`);
+      if (hits.length !== 0 && currentPage === 1) {
+        toast.success(`We found ${totalHits} images for your request`);
+      }
 
       const totalPages = Math.ceil(totalHits / 12);
-      this.setState({
-        images: hits,
-        totalPages,
+      this.setState(prevState => ({
+        images: [...prevState.images, ...hits],
         showLoader: false,
-        showButton: true,
-      });
+        showButton: prevState.currentPage < totalPages,
+      }));
     } catch (error) {
       toast.error(error.message);
     }
   };
 
-  onLoadMore = async () => {
-    try {
-      this.setState({ showLoader: true, showButton: false });
-
-      const response = await fetchImagesWithQuery(
-        this.state.searchQuery,
-        this.state.currentPage + 1
-      );
-
-      this.setState(prevState => ({
-        images: [...prevState.images, ...response.hits],
-        currentPage: prevState.currentPage + 1,
-        showLoader: false,
-        showButton: true,
-      }));
-    } catch (error) {
-      toast.error(error.message);
+  onFormSubmit = searchQuery => {
+    if (searchQuery === this.state.searchQuery) {
+      toast.error('This is your current search');
+      return;
     }
+    this.setState({
+      searchQuery,
+      images: [],
+      currentPage: 1,
+      showButton: false,
+    });
+  };
+
+  onLoadMore = () => {
+    this.setState(prevState => ({
+      currentPage: prevState.currentPage + 1,
+      showButton: false,
+    }));
   };
 
   onCloseModal = () => {
@@ -87,15 +85,8 @@ class App extends Component {
   };
 
   render() {
-    const {
-      images,
-      currentPage,
-      totalPages,
-      showModal,
-      selectedImage,
-      showLoader,
-      showButton,
-    } = this.state;
+    const { images, showModal, selectedImage, showLoader, showButton } =
+      this.state;
 
     return (
       <div className={css.App}>
@@ -103,9 +94,7 @@ class App extends Component {
 
         <ImageGallery images={images} onImageClick={this.onImageClick} />
 
-        {currentPage < totalPages && showButton && (
-          <Button onLoadMore={this.onLoadMore} />
-        )}
+        {showButton && <Button onLoadMore={this.onLoadMore} />}
 
         {showModal && (
           <Modal onClose={this.onCloseModal} selectedImage={selectedImage} />
