@@ -15,7 +15,7 @@ class App extends Component {
     images: [],
     searchQuery: '',
     selectedImage: null,
-    fetchPage: 1,
+    currentPage: 1,
     totalPages: 0,
     showModal: false,
     showLoader: false,
@@ -26,7 +26,7 @@ class App extends Component {
     try {
       this.setState({
         images: [],
-        fetchPage: 1,
+        currentPage: 1,
         searchQuery,
         totalPages: 0,
         showModal: false,
@@ -40,13 +40,13 @@ class App extends Component {
         this.setState({ showLoader: false });
         return toast.warn('You must enter something!');
       }
-      if (hits.length === 0) {
+      if (totalHits === 0) {
         this.setState({ showLoader: false });
         return toast.warn('We did not find anything for your request!');
       }
+      toast.success(`We found ${totalHits} images for your request`);
 
       const totalPages = Math.ceil(totalHits / 12);
-
       this.setState({
         images: hits,
         totalPages,
@@ -60,16 +60,18 @@ class App extends Component {
 
   onLoadMore = async () => {
     try {
-      const { searchQuery, fetchPage } = this.state;
       this.setState({ showLoader: true, showButton: false });
-      const response = await fetchImagesWithQuery(searchQuery, fetchPage + 1);
 
-      this.setState({ showLoader: false, showButton: true });
-      const { hits } = response;
+      const response = await fetchImagesWithQuery(
+        this.state.searchQuery,
+        this.state.currentPage + 1
+      );
 
       this.setState(prevState => ({
-        images: [...prevState.images, ...hits],
-        fetchPage: prevState.fetchPage + 1,
+        images: [...prevState.images, ...response.hits],
+        currentPage: prevState.currentPage + 1,
+        showLoader: false,
+        showButton: true,
       }));
     } catch (error) {
       toast.error(error.message);
@@ -86,7 +88,8 @@ class App extends Component {
 
   render() {
     const {
-      fetchPage,
+      images,
+      currentPage,
       totalPages,
       showModal,
       selectedImage,
@@ -98,12 +101,9 @@ class App extends Component {
       <div className={css.App}>
         <Searchbar onSubmit={this.onFormSubmit} />
 
-        <ImageGallery
-          images={this.state.images}
-          onImageClick={this.onImageClick}
-        />
+        <ImageGallery images={images} onImageClick={this.onImageClick} />
 
-        {fetchPage < totalPages && showButton && (
+        {currentPage < totalPages && showButton && (
           <Button onLoadMore={this.onLoadMore} />
         )}
 
