@@ -1,0 +1,23 @@
+.buttonWrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.button {
+  padding: 10px 40px;
+
+  font-size: 18px;
+
+  box-shadow: 1px 1.5px 5px #000000ed;
+  background: #000;
+  color: #fff;
+  outline: transparent;
+  transition: background linear 250ms;
+  cursor: pointer;
+}
+
+.button:hover,
+.button:focus {
+  background: #000000ed;
+}
